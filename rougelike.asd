@@ -12,7 +12,8 @@
   :author ""
   :license ""
   :depends-on (:cl-charms
-               :perlin)
+               :perlin
+               :omens)
   :components ((:module "src"
                 :components
                 ((:file "rougelike"))))
