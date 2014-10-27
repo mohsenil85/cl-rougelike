@@ -60,6 +60,28 @@
           ((#\t) (write-at-point "win screen input" 3 3)))))
 
 
+(defun make-start-screen ()
+  (defclass start-screen (screen) 
+    (window))
+  
+  (defmethod draw-screen ((screen start-screen))
+    (write-at-point "i am the start screen" 0 0))
+
+  (defmethod get-input ((screen start-screen))
+      (let  ((c (get-char *standard-window* :ignore-error t)))
+        (case c
+          ((nil) nil)
+          ((#\q) (setf *running* nil))
+          ((#\t) (write-at-point "start screen input" 3 3)))) )
+
+  (defmethod next-screen ((screen start-screen))
+    (gethash 'win *screens*))
+  
+    (setf (gethash 'start *screens*)  (make-instance 'start-screen)))
+
+
+
+
 (defmethod next-screen ((screen lose-screen))
   nil)
 
@@ -83,10 +105,10 @@
 
 (defun main ()
   (with-init
+    (make-start-screen)
     (setf (gethash 'win *screens*)  (make-instance 'win-screen))
     (setf (gethash 'lose *screens*)  (make-instance 'lose-screen))
-    (run-screen (gethash 'win *screens*))
-    ;(run-screen *lose*)
+    (run-screen (gethash 'start *screens*))
     ))
 
 (main)
