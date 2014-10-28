@@ -81,24 +81,27 @@
     (setf (gethash 'start *screens*)  (make-instance 'start-screen))))
 
 (defmacro defscreen (scrn )
-  `(progn
-     (defclass ,scrn (screen)
-       (window))
+  `(funcall #'(lambda (s) 
+               (progn
 
-     (defmethod draw-screen ((screen ,scrn))
-        (write-at-point "i am the start screen" 0 0))
+                 (defclass s (screen)
+                   (window))
 
-     (defmethod get-input ((screen ,scrn))
-        (let  ((c (get-char *standard-window* :ignore-error t)))
-          (case c
-            ((nil) nil)
-            ((#\q) (setf *running* nil))
-            ((#\t) (write-at-point "start screen input" 3 3))))  )
+                 (defmethod draw-screen ((screen s))
+                   (write-at-point "i am the start screen" 0 0))
 
-     (defmethod next-screen ((screen ,scrn))
-        (gethash 'win *screens*))
+                 (defmethod get-input ((screen s))
+                   (let  ((c (get-char *standard-window* :ignore-error t)))
+                     (case c
+                       ((nil) nil)
+                       ((#\q) (setf *running* nil))
+                       ((#\t) (write-at-point "start screen input" 3 3))))  )
 
-     (setf (gethash ',scrn *screens*)  (make-instance ',scrn))) )
+                 (defmethod next-screen ((screen s))
+                   (gethash 'win *screens*))
+
+                 (setf (gethash ',scrn *screens*)  (make-instance ',scrn)))) 
+            ,scrn))
 
 (macroexpand-1 '(defscreen start-screen))
 
@@ -127,13 +130,28 @@
 (defun main ()
   (with-init
     (make-start-screen)
-;    (defscreen start-screen)
+    (defscreen start-screen)
     (setf (gethash 'win *screens*)  (make-instance 'win-screen))
     (setf (gethash 'lose *screens*)  (make-instance 'lose-screen))
     (run-screen (gethash 'start *screens*))
     ))
 
 (main)
+
+(defparameter *test2* nil)
+(defparameter *test* nil)
+
+(defmacro testmac (foo &body body)
+  `(funcall #'(lambda (x) 
+                (progn 
+                  (setf *test* x)
+                  ,@body
+                  
+                  )) ,foo))
+
+*test*
+*test2*
+(testmac "blah" (setf *test2* "foo" ))
 
 ;(setq myh (make-hash-table))
 ;
