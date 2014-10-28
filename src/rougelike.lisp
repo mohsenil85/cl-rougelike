@@ -29,7 +29,7 @@
 
            :output ',@output
 
-           :next '(gethash ,next *screens*) )))
+           :next '(gethash ,next *screens*))))
 
 (defscreen win
            :input ( ((nil) nil)
