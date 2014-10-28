@@ -61,25 +61,46 @@
 
 
 (defun make-start-screen ()
-  (defclass start-screen (screen) 
-    (window))
-  
-  (defmethod draw-screen ((screen start-screen))
-    (write-at-point "i am the start screen" 0 0))
+  (progn
+    (defclass start-screen (screen) 
+      (window))
 
-  (defmethod get-input ((screen start-screen))
+    (defmethod draw-screen ((screen start-screen))
+      (write-at-point "i am the start screen" 0 0))
+
+    (defmethod get-input ((screen start-screen))
       (let  ((c (get-char *standard-window* :ignore-error t)))
         (case c
           ((nil) nil)
           ((#\q) (setf *running* nil))
           ((#\t) (write-at-point "start screen input" 3 3)))) )
 
-  (defmethod next-screen ((screen start-screen))
-    (gethash 'win *screens*))
-  
-    (setf (gethash 'start *screens*)  (make-instance 'start-screen)))
+    (defmethod next-screen ((screen start-screen))
+      (gethash 'win *screens*))
 
+    (setf (gethash 'start *screens*)  (make-instance 'start-screen))))
 
+(defmacro defscreen (scrn )
+  `(progn
+     (defclass ,scrn (screen)
+       (window))
+
+     (defmethod draw-screen ((screen ,scrn))
+        (write-at-point "i am the start screen" 0 0))
+
+     (defmethod get-input ((screen ,scrn))
+        (let  ((c (get-char *standard-window* :ignore-error t)))
+          (case c
+            ((nil) nil)
+            ((#\q) (setf *running* nil))
+            ((#\t) (write-at-point "start screen input" 3 3))))  )
+
+     (defmethod next-screen ((screen ,scrn))
+        (gethash 'win *screens*))
+
+     (setf (gethash ',scrn *screens*)  (make-instance ',scrn))) )
+
+(macroexpand-1 '(defscreen start-screen))
 
 
 (defmethod next-screen ((screen lose-screen))
@@ -106,6 +127,7 @@
 (defun main ()
   (with-init
     (make-start-screen)
+;    (defscreen start-screen)
     (setf (gethash 'win *screens*)  (make-instance 'win-screen))
     (setf (gethash 'lose *screens*)  (make-instance 'lose-screen))
     (run-screen (gethash 'start *screens*))
