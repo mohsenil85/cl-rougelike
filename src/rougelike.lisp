@@ -49,13 +49,24 @@
 (defun get-map-around-player (player) 
   (multiple-value-bind (abs-x abs-y)
   (get-origin-relative-player player)
-  (loop for i below *screen-height* do
-        (loop for j below *screen-width* do
-              (write-at-point  (num-to-char (perlin-lookup (+ abs-x  i)
-                             (+ abs-y  j)))
-                                j i)))))
+  (loop for i from 1 below *screen-height* do
+        (loop for j from 2 below *screen-width* do
+              (let ((chr  (num-to-char (perlin-lookup (+ abs-x  i)
+                             (+ abs-y  j)))  )) 
+                (write-at-point  chr j i
+                                (color-switch chr)))))))
 
 
+(defun color-switch (chr)
+  (case chr
+    ((#\~) +blue+)
+    ((#\.) +green+)
+    ((#\+) +yellow+)
+    (t +white+)
+    )
+  )
+
+(color-switch #\~)
 
 (defun get-tile-above-player (p)
   (num-to-char 
@@ -132,7 +143,13 @@
 ;                  (draw-map-cell player i j) ) ) )))
 
 (defun move-down (player)
+  (incf (player-x player)))
+(defun move-up (player)
   (decf (player-x player)))
+(defun move-left (player)
+  (decf (player-y player)))
+(defun move-right (player)
+  (incf (player-y player)))
 
 
 
@@ -148,6 +165,9 @@
            :before ((init-player))
            :input ( ((nil) nil)
                     ((#\j) (move-down *player*))
+                    ((#\k) (move-up *player*))
+                    ((#\h) (move-left *player*))
+                    ((#\l) (move-right *player*))
                     ((#\w) (run-screen (gethash 'win *screens*)))
                     (t (quit-screen)))
            :output ((refresh-window *standard-window*)
@@ -155,7 +175,7 @@
                     ;(draw-map *player*) 
                     (draw-player))
            :next 'lose
-          ; :boxed t
+           :boxed t
            
            )
 
