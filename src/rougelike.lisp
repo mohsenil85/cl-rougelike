@@ -15,8 +15,6 @@
    (floor (/ w 2))
    (floor (/ h 2))))
 
-(center 10 10)
-
 (defun write-at-center (msg &optional (color +white+))
   (write-at-point msg
    (floor (/ (- *screen-width* (length msg)) 2))
@@ -25,8 +23,8 @@
    ))
 
 (defparameter *player* nil)
-
 (defstruct player x y health)
+
 (defun init-player ()
   (setf *player* (make-player 
                    :x (random *screen-width*) 
@@ -39,14 +37,16 @@
     (player-x p)
     +magenta+))
 
-(defun marshal-player ()
-  (unless *player*
-    (init-player *player*)))
 
+(defparameter *grid* nil)
+(defparameter *world-width*  1000)
+(defparameter *world-height*  1000)
 
 (defun draw-map ()
+(setf *grid* (perlin2d-grid   *world-width* *world-height*  0.1 4) )  )
+
+
   
-  )
 (defscreen start
            :input ( ((nil) nil)
                     (t (quit-screen)))
