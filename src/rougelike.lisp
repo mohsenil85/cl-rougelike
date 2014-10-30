@@ -53,7 +53,7 @@
         (loop for j below *screen-width* do
               (write-at-point  (num-to-char (perlin-lookup (+ abs-x  i)
                              (+ abs-y  j)))
-                               i j)))))
+                                j i)))))
 
 
 
