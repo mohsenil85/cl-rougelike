@@ -10,11 +10,6 @@
         :omens))
 (in-package :rougelike)
 
-(defun center (w h)
-  (values
-    (floor (/ w 2))
-    (floor (/ h 2))))
-
 (defun write-at-center (msg &optional (color +white+))
   (write-at-point msg
                   (floor (/ (- *screen-width* (length msg)) 2))
@@ -23,12 +18,15 @@
 
 (defparameter *player* nil)
 (defstruct player x y health)
+(defstruct tile x y glyph color)
 
 (defun init-player ()
   (setf *player* (make-player 
-                   :x (random *world-width*)
-                   :y (random *world-height*)
+                   :x 45 ;(random 900) ; 1043;45 ;(random *world-width*)
+                   :y -45 ; 953; ; (random *world-height*)
                    )))
+
+(setf *seed* (random 10))
 
 (defun calc-origin-from-player-coords (x y)
   (values 
@@ -36,65 +34,58 @@
     (- (- x (floor (/  *screen-width*  2))) 32 )
     ))
 
+(defun draw-hud ()
+  (write-at-point 
+    (format nil "X: ~A Y: ~A" 
+            (player-x *player*)
+            (player-y *player*)
+            )
+   ;         (- (player-x *player*) 45) 
+   ;         (+ (player-y *player*) 45))
+    1 1)
+  )
+
 (defun perlin-lookup (x y)
-  (aref *grid* y x))
+  (if (and
+        (> y 0 )  
+        (> x 0 )  
+        (< y *world-height* )  
+        (< x *world-width* ))
+    (aref *grid* y x)
+    0.0
+    ))
 
 
-(defun get-origin-relative-player (p)
-   (values
-      (+ 1 (- (player-x p) (floor (/ *screen-width* 2))))  
-      (+ 1 (- (player-y p) (floor (/ *screen-height* 2))))
-      ))
-
-(defun get-map-around-player (player) 
-  (multiple-value-bind (abs-x abs-y)
-  (get-origin-relative-player player)
-  (loop for i from 1 below *screen-height* do
-        (loop for j from 2 below *screen-width* do
-              (let ((chr  (num-to-char (perlin-lookup (+ abs-x  i)
-                             (+ abs-y  j)))  )) 
-                (write-at-point  chr j i
-                                (color-switch chr)))))))
+(defun draw-map (player) 
+  (let ((abs-x 
+          (+ 1 (- (player-x player) (floor (/ *screen-width* 2)))))
+        (abs-y
+          (+ 1 (- (player-y player) (floor (/ *screen-height* 2))))))
+    (loop :for i 
+          :from 1 
+          :below *screen-height* 
+          :do
+          (loop :for j 
+                :from 2 
+                :below *screen-width* 
+                :do
+                (let ((chr  (num-to-char (perlin-lookup (+ abs-x  i)
+                                                        (+ abs-y  j)))  )) 
+                  (write-at-point  chr j i
+                                   (color-switch chr)))))))
 
 
 (defun color-switch (chr)
   (case chr
+    ((#\`) +magenta+)
+    ((#\*) +blue+)
     ((#\~) +blue+)
     ((#\.) +green+)
+    ((#\o) +red+)
     ((#\+) +yellow+)
-    (t +white+)
-    )
-  )
-
-(color-switch #\~)
-
-(defun get-tile-above-player (p)
-  (num-to-char 
-    (perlin-lookup 
-      (- (player-y p) 1)
-      (player-x p)
-    ))
-  )
+    (t +white+)))
 
 
-;(draw-tile)
-
-;(init-player)
-;*player*
-;(get-origin-relative-player *player*)
-;(get-abs-coords *player*)
-(defun get-abs-coords (p)
-  (values
-    (player-x p)
-    (player-y p)
-    )
-  )
-;(get-tile-above-player *player*)
-
-(defun myfun ()
-  (draw-map-cell (get-origin-tile *player*) 
-                 1 1 
-                 ))
 
 (defun draw-player ()
   (write-at-point 
@@ -108,48 +99,28 @@
 (defparameter *world-width*  1000)
 (defparameter *world-height*  1000)
 
-(setf *grid* (perlin2d-grid   *world-width* *world-height*  0.1 4))
+(setf *grid* (perlin2d-grid   *world-width* *world-height*  0.10 5))
 
 (defun num-to-char (num)
   (cond
-    ((< num .6 ) #\~)
-    ;((< num .6 ) #\o)
-    ((< num .8 ) #\.)
-    ;((< num .8 ) #\()
+    ((= num  0 ) #\Space)
+    ((< num .2 ) #\~)
+    ((< num .4 ) #\~)
+    ((< num .5 ) #\~)
+    ((< num .7 ) #\.)
+    ((< num .8 ) #\+)
     ((< num .9 ) #\+)
     (t #\$)))
 
-(defun draw-map-cell (chr i j)
-    (case chr
-      ((#\~) (write-at-point chr i j +blue+ ))
-      ((#\.) (write-at-point chr i j +red+ ))
-      ((#\o) (write-at-point chr i j +red+ ))
-      ((#\() (write-at-point chr i j +green+))
-      ((#\+) (write-at-point chr i j +green+ ))
-      (otherwise (write-at-point  chr i j))))
-
-(defun draw-map (player)
-  (loop for i below *screen-width* do
-        (loop for j below *screen-height* do
-              (draw-map-cell player i j) )))
-
-;(defun draw-map (player)
-;  (multiple-value-bind (x-zero y-zero)
-;    (calc-origin-from-player-coords (player-x player) (player-y player))
-;    (let ((max-x (+ (- *screen-width* 2) x-zero))
-;          (max-y (+ (- *screen-height* 1) y-zero)) )
-;      (loop for i from x-zero below max-x do
-;            (loop for j from y-zero below max-y do
-;                  (draw-map-cell player i j) ) ) )))
 
 (defun move-down (player)
-  (incf (player-x player)))
+  (when (> 1043 (player-x player)) (incf (player-x player))))
 (defun move-up (player)
-  (decf (player-x player)))
+  (when (< 45 (player-x player)) (decf (player-x player))))
 (defun move-left (player)
-  (decf (player-y player)))
+  (when (< -45 (player-y player)) (decf (player-y player))))
 (defun move-right (player)
-  (incf (player-y player)))
+  (when (> 953 (player-y player)) (incf (player-y player))))
 
 
 
@@ -171,12 +142,12 @@
                     ((#\w) (run-screen (gethash 'win *screens*)))
                     (t (quit-screen)))
            :output ((refresh-window *standard-window*)
-                    (get-map-around-player *player*)
-                    ;(draw-map *player*) 
+                    (draw-map *player*)
+                    (draw-hud) 
                     (draw-player))
            :next 'lose
            :boxed t
-           
+
            )
 
 (defscreen win
@@ -197,4 +168,4 @@
   (with-init
     (run-screen (gethash 'start *screens*))))
 
-(main)
+;(main)
