@@ -22,58 +22,62 @@
 
 (defun init-player ()
   (setf *player* (make-player 
-                   :x 45 ;(random 900) ; 1043;45 ;(random *world-width*)
-                   :y -45 ; 953; ; (random *world-height*)
+                   :x 0 ;(random *map-size*)
+                   :y 0 ;(random *map-size*)
                    )))
 
 (setf *seed* (random 10))
-
-(defun calc-origin-from-player-coords (x y)
-  (values 
-    (- (- y (floor (/ *screen-height*  2))) 27)
-    (- (- x (floor (/  *screen-width*  2))) 32 )
-    ))
 
 (defun draw-hud ()
   (write-at-point 
     (format nil "X: ~A Y: ~A" 
             (player-x *player*)
-            (player-y *player*)
-            )
-   ;         (- (player-x *player*) 45) 
-   ;         (+ (player-y *player*) 45))
-    1 1)
+            (player-y *player*))
+    1 1 1)
   )
 
-(defun perlin-lookup (x y)
-  (if (and
-        (> y 0 )  
-        (> x 0 )  
-        (< y *world-height* )  
-        (< x *world-width* ))
-    (aref *grid* y x)
-    0.0
-    ))
+
+(defun player-coords-to-screen (player x-offset y-offset)
+  (let ((x (+ x-offset (player-x player)))
+        (y (+ y-offset (player-y player))))
+    (draw-tile  (create-map-tile x y)
+                (+ x-offset (floor (/ *screen-width* 2)))
+                (+ y-offset (floor (/ *screen-height* 2))))))
+
+(defun draw-map (player)
+  (let ((x-min (1+ (* -1 (floor (/ *screen-width* 2)))))
+        (x-max (floor (/ *screen-width* 2)))
+        (y-min (1+ (* -1 (floor (/ *screen-height* 2)))))
+        (y-max ( floor (/ *screen-height* 2))))
+    (loop for i from x-min below x-max do
+        (loop for j from y-min below y-max do
+              ( player-coords-to-screen player i j)))))
+
+(defparameter *perlin-depth* 4)
+(defparameter *perlin-freq* .1)
+
+(defun create-glyph (x y)
+  (if (and (<= 0 y)
+           (<= 0 x)
+           (>= *map-size* y)
+           (>= *map-size* x)) 
+    (num-to-char 
+      (perlin2d x y 
+                *perlin-freq* 
+                *perlin-depth*))
+  #\Space))
 
 
-(defun draw-map (player) 
-  (let ((abs-x 
-          (+ 1 (- (player-x player) (floor (/ *screen-width* 2)))))
-        (abs-y
-          (+ 1 (- (player-y player) (floor (/ *screen-height* 2))))))
-    (loop :for i 
-          :from 1 
-          :below *screen-height* 
-          :do
-          (loop :for j 
-                :from 2 
-                :below *screen-width* 
-                :do
-                (let ((chr  (num-to-char (perlin-lookup (+ abs-x  i)
-                                                        (+ abs-y  j)))  )) 
-                  (write-at-point  chr j i
-                                   (color-switch chr)))))))
+(defun create-map-tile (x y)
+  (let ((glyph (create-glyph x y)))
+    (make-tile :x x
+               :y y
+               :glyph glyph
+               :color (color-switch glyph))))
 
+(defun draw-tile (tile x y)
+  (write-at-point (tile-glyph tile) x y
+                  (tile-color tile)))
 
 (defun color-switch (chr)
   (case chr
@@ -95,16 +99,10 @@
     +magenta+))
 
 
-(defparameter *grid* nil)
-(defparameter *world-width*  1000)
-(defparameter *world-height*  1000)
-
-(setf *grid* (perlin2d-grid   *world-width* *world-height*  0.10 5))
-
 (defun num-to-char (num)
   (cond
     ((= num  0 ) #\Space)
-    ((< num .2 ) #\~)
+    ((< num .2 ) #\`)
     ((< num .4 ) #\~)
     ((< num .5 ) #\~)
     ((< num .7 ) #\.)
@@ -113,14 +111,20 @@
     (t #\$)))
 
 
+(defparameter *map-size* 100)
+
 (defun move-down (player)
-  (when (> 1043 (player-x player)) (incf (player-x player))))
+    (when (> *map-size* (player-y player)) 
+      (incf (player-y player))))
 (defun move-up (player)
-  (when (< 45 (player-x player)) (decf (player-x player))))
+    (when (< 0 (player-y player))
+      (decf (player-y player))))
 (defun move-left (player)
-  (when (< -45 (player-y player)) (decf (player-y player))))
+  ( when (< 0 (player-x player))
+    (decf (player-x player))))
 (defun move-right (player)
-  (when (> 953 (player-y player)) (incf (player-y player))))
+  ( when (> *map-size* (player-x player)) 
+    (incf (player-x player))))
 
 
 
