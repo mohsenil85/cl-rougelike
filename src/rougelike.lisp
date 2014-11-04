@@ -17,14 +17,29 @@
                   color))
 
 (defparameter *player* nil)
-(defstruct player x y health)
+(defparameter *monster* nil)
 (defstruct tile x y glyph color)
+(defstruct (player (:include tile)) health)
+(defstruct (monster (:include player)))
 
 (defun init-player ()
   (setf *player* (make-player 
-                   :x 0 ;(random *map-size*)
-                   :y 0 ;(random *map-size*)
-                   )))
+                   :x (random *map-size*)
+                   :y (random *map-size*)
+                   :glyph #\@
+                   :color +magenta+
+                   :health 10)))
+
+(defun init-monster ()
+  (setf *monster* (make-monster 
+                   :x (random *map-size*)
+                   :y (random *map-size*)
+                   :glyph #\M
+                   :color +yellow+
+                   :health 10)) )
+
+(defun draw-monster (monster)
+  (draw-tile monster 3 3) )
 
 (setf *seed* (random 10))
 
@@ -36,6 +51,11 @@
     1 1 1)
   )
 
+(defun is-onscreen (monster player)
+  (
+     
+     )
+  )
 
 (defun player-coords-to-screen (player x-offset y-offset)
   (let ((x (+ x-offset (player-x player)))
@@ -91,12 +111,10 @@
 
 
 
-(defun draw-player ()
-  (write-at-point 
-    #\@
+(defun draw-player (player)
+  (draw-tile player
     (floor (/ *screen-width* 2))
-    (floor (/ *screen-height* 2))
-    +magenta+))
+    (floor (/ *screen-height* 2))))
 
 
 (defun num-to-char (num)
@@ -137,7 +155,8 @@
 
 
 (defscreen play
-           :before ((init-player))
+           :before ((init-player)
+                     (init-monster))
            :input ( ((nil) nil)
                     ((#\j) (move-down *player*))
                     ((#\k) (move-up *player*))
@@ -148,7 +167,8 @@
            :output ((refresh-window *standard-window*)
                     (draw-map *player*)
                     (draw-hud) 
-                    (draw-player))
+                    (draw-monster *monster*) 
+                    (draw-player *player*))
            :next 'lose
            :boxed t
 
@@ -172,4 +192,4 @@
   (with-init
     (run-screen (gethash 'start *screens*))))
 
-;(main)
+(main)
