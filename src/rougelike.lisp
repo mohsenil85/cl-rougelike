@@ -10,22 +10,36 @@
         :omens))
 (in-package :rougelike)
 
-(defun write-at-center (msg &optional (color +white+))
-  (write-at-point msg
-                  (floor (/ (- *screen-width* (length msg)) 2))
-                  (floor (/ *screen-height* 2))
-                  color))
+(defun coords-to-glyph (x y)
+  (if (and (<= 0 y)
+           (<= 0 x)
+           (>= *map-size* y)
+           (>= *map-size* x)) 
+    (num-to-char 
+      (perlin2d x y 
+                *perlin-freq* 
+                *perlin-depth*))
+  #\Space))
 
 (defparameter *player* nil)
 (defparameter *monsters* nil)
 
 (defstruct tile x y glyph color)
-(defstruct (player 
-             (:include tile)) 
-                health
-                
-                )
+(defstruct (player (:include tile)) 
+                health)
 (defstruct (monster (:include player)))
+
+
+;;;;;entity -> tile -> player -> monster
+;;;         \-> hud
+;;;init draw move
+;;;
+;;;but also have monsters and monster...  
+;;;push monsters et al into *state* var.  player as well..  hud?
+;;;
+;;;
+;;;want to do (for all obj in *objects do (draw object))
+;;;and (all obj in objects do update object
 
 (defun init-player ()
   (setf *player* (make-player 
@@ -38,16 +52,23 @@
 (defparameter *monsters* nil)
 
 (defun init-monster ()
-  (push   (make-monster 
+  (make-monster 
                    :x  (random *map-size*)
                    :y  (random *map-size*)
                    :glyph #\M
                    :color +yellow+
-                   :health 10) *monsters*) )
+                   :health 10 ))
+
+(defun init-tile (x y)
+  (let ((glyph (coords-to-glyph x y)))
+    (make-tile :x x
+               :y y
+               :glyph glyph
+               :color (color-switch glyph))))
 
 (defun init-monsters ()
   (loop for i  below 10 do 
-        (init-monster)))
+        (push (init-monster) *monsters*)))
 
 
 (setf *seed* (random 10))
@@ -80,7 +101,7 @@
 (defun player-coords-to-screen (player x-offset y-offset)
   (let ((x (+ x-offset (player-x player)))
         (y (+ y-offset (player-y player))))
-    (draw-tile  (create-map-tile x y)
+    (draw-tile  (init-tile x y)
                 (+ x-offset (floor (/ *screen-width* 2)))
                 (+ y-offset (floor (/ *screen-height* 2))))))
 
@@ -96,24 +117,8 @@
 (defparameter *perlin-depth* 4)
 (defparameter *perlin-freq* .1)
 
-(defun create-glyph (x y)
-  (if (and (<= 0 y)
-           (<= 0 x)
-           (>= *map-size* y)
-           (>= *map-size* x)) 
-    (num-to-char 
-      (perlin2d x y 
-                *perlin-freq* 
-                *perlin-depth*))
-  #\Space))
 
 
-(defun create-map-tile (x y)
-  (let ((glyph (create-glyph x y)))
-    (make-tile :x x
-               :y y
-               :glyph glyph
-               :color (color-switch glyph))))
 
 (defun draw-tile (tile x y)
   (write-at-point (tile-glyph tile) x y
@@ -217,4 +222,4 @@
   (with-init
     (run-screen (gethash 'start *screens*))))
 
-(main)
+;(main)
