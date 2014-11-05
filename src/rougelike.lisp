@@ -17,45 +17,60 @@
                   color))
 
 (defparameter *player* nil)
-(defparameter *monster* nil)
+(defparameter *monsters* nil)
+
 (defstruct tile x y glyph color)
 (defstruct (player (:include tile)) health)
 (defstruct (monster (:include player)))
 
 (defun init-player ()
   (setf *player* (make-player 
-                   :x (random *map-size*)
-                   :y (random *map-size*)
+                   :x 0 ;(random *map-size*)
+                   :y 0 ;(random *map-size*)
                    :glyph #\@
                    :color +magenta+
                    :health 10)))
 
+(defparameter *monsters* nil)
+
 (defun init-monster ()
-  (setf *monster* (make-monster 
-                   :x (random *map-size*)
-                   :y (random *map-size*)
+  (push   (make-monster 
+                   :x  (random *map-size*)
+                   :y  (random *map-size*)
                    :glyph #\M
                    :color +yellow+
-                   :health 10)) )
+                   :health 10) *monsters*) )
 
-(defun draw-monster (monster)
-  (draw-tile monster 3 3) )
+(defun init-monsters ()
+  (loop for i  below 10 do 
+        (init-monster)))
+
 
 (setf *seed* (random 10))
 
 (defun draw-hud ()
   (write-at-point 
-    (format nil "X: ~A Y: ~A" 
+    (format nil "X: ~A Y: ~A "
             (player-x *player*)
-            (player-y *player*))
+            (player-y *player*)
+            )
     1 1 1)
   )
 
-(defun is-onscreen (monster player)
-  (
-     
-     )
-  )
+(defun draw-monster (monster player)
+  (let ((monst-x (- (floor (/ *screen-width* 2))
+                    (- (player-x player) (monster-x monster))))
+        (monst-y (- (floor (/ *screen-height* 2)) 
+                    (- (player-y player)(monster-y monster)))   ))
+    (if (and 
+          (< 1 monst-x *screen-width*)
+          (< 1 monst-y *screen-height*)) 
+      (write-at-point (monster-glyph monster ) monst-x monst-y ))))
+
+
+(defun draw-monsters (monsters player)
+  (loop for m in  monsters do
+        (draw-monster m player)))
 
 (defun player-coords-to-screen (player x-offset y-offset)
   (let ((x (+ x-offset (player-x player)))
@@ -98,6 +113,32 @@
 (defun draw-tile (tile x y)
   (write-at-point (tile-glyph tile) x y
                   (tile-color tile)))
+
+(defun within-range (num mn mx)
+  (<= mn num mx)
+  )
+
+(defun  crossrange-x (player )
+  "take a coord from player and translate it into an x range around the player"
+  (values 
+    (- (player-x player) (floor (/ *screen-width* 2)))
+    (+ (player-x player) (floor (/ *screen-width* 2))) 
+    (- (player-y player) (floor (/ *screen-height* 2))) 
+    (+ (player-y player) (floor (/ *screen-height* 2)))))
+
+
+(defun draw-test (player)
+  (multiple-value-bind (xmin xmax ymin ymax)
+    (crossrange-x player)
+    (if (and (within-range (monster-x *monster*) xmin xmax)
+             (within-range (monster-y *monster*) ymin ymax))
+      (draw-tile *monster* 3 3)
+      )
+    ))
+
+;(init-player)
+;(draw-test *player*)
+
 
 (defun color-switch (chr)
   (case chr
@@ -156,7 +197,7 @@
 
 (defscreen play
            :before ((init-player)
-                     (init-monster))
+                     (init-monsters))
            :input ( ((nil) nil)
                     ((#\j) (move-down *player*))
                     ((#\k) (move-up *player*))
@@ -167,8 +208,11 @@
            :output ((refresh-window *standard-window*)
                     (draw-map *player*)
                     (draw-hud) 
-                    (draw-monster *monster*) 
-                    (draw-player *player*))
+                 ;   (draw-monster *monster*) 
+                    (draw-player *player*)
+                    ;(draw-test *player*)
+                    (draw-monsters *monsters* *player*)
+                    )
            :next 'lose
            :boxed t
 
