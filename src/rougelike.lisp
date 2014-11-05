@@ -20,7 +20,11 @@
 (defparameter *monsters* nil)
 
 (defstruct tile x y glyph color)
-(defstruct (player (:include tile)) health)
+(defstruct (player 
+             (:include tile)) 
+                health
+                
+                )
 (defstruct (monster (:include player)))
 
 (defun init-player ()
@@ -50,9 +54,10 @@
 
 (defun draw-hud ()
   (write-at-point 
-    (format nil "X: ~A Y: ~A "
+    (format nil "X: ~A Y: ~A Monsters: ~A "
             (player-x *player*)
             (player-y *player*)
+            (length *monsters*)
             )
     1 1 1)
   )
@@ -114,30 +119,7 @@
   (write-at-point (tile-glyph tile) x y
                   (tile-color tile)))
 
-(defun within-range (num mn mx)
-  (<= mn num mx)
-  )
 
-(defun  crossrange-x (player )
-  "take a coord from player and translate it into an x range around the player"
-  (values 
-    (- (player-x player) (floor (/ *screen-width* 2)))
-    (+ (player-x player) (floor (/ *screen-width* 2))) 
-    (- (player-y player) (floor (/ *screen-height* 2))) 
-    (+ (player-y player) (floor (/ *screen-height* 2)))))
-
-
-(defun draw-test (player)
-  (multiple-value-bind (xmin xmax ymin ymax)
-    (crossrange-x player)
-    (if (and (within-range (monster-x *monster*) xmin xmax)
-             (within-range (monster-y *monster*) ymin ymax))
-      (draw-tile *monster* 3 3)
-      )
-    ))
-
-;(init-player)
-;(draw-test *player*)
 
 
 (defun color-switch (chr)
@@ -210,7 +192,6 @@
                     (draw-hud) 
                  ;   (draw-monster *monster*) 
                     (draw-player *player*)
-                    ;(draw-test *player*)
                     (draw-monsters *monsters* *player*)
                     )
            :next 'lose
