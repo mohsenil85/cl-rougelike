@@ -42,19 +42,19 @@
 ;;;and (all obj in objects do update object
 
 (defun init-player ()
-  (setf *player* (make-player 
+  (make-player 
                    :x 0 ;(random *map-size*)
                    :y 0 ;(random *map-size*)
                    :glyph #\@
                    :color +magenta+
-                   :health 10)))
+                   :health 10))
 
 (defparameter *monsters* nil)
 
 (defun init-monster ()
   (make-monster 
-                   :x  (random *map-size*)
-                   :y  (random *map-size*)
+                   :x 3 ;(random *map-size*)
+                   :y 4 ;(random *map-size*)
                    :glyph #\M
                    :color +yellow+
                    :health 10 ))
@@ -65,6 +65,58 @@
                :y y
                :glyph glyph
                :color (color-switch glyph))))
+
+
+;(defclass node-object ()
+;  ((x :accessor world-x :initarg :x)
+;   (y :accessor world-y :initarg :y)
+;   (glyph :accessor :node-glyph :initarg :glyph)
+;   (color :accessor :node-color :initform +white+ :initarg :color)))
+;
+;(defclass player-new (node-object) ((health :initform 10 :accessor health)))
+
+(defparameter *state* (make-hash-table)) 
+
+;(defgeneric init-object ((node-object n))
+;  (:documentation "initzialize the node object"))
+
+
+(defun init-player (player)
+(setf (gethash player *state* ) ( 
+               :x 0 
+               :y 0 
+               :glyph #\@ :color +yellow+)))
+
+
+(defparameter *player* (make-instance 'player-new
+                                      :x 0 
+                                      :y 0 
+                                      :glyph #\@ :color +yellow+   
+                                      ))
+(init-player *player*)
+
+*state*
+
+;;could have a node object that had x, , glyph, color, other props, indexed by #'eql name
+
+()
+
+
+(defun init-world (state)
+  "functional method to push all game objects into state returns new state"
+  (push (init-player) state)
+  (loop for i  below 10 do 
+        (push (init-monster) state))
+  state
+  )
+
+(defun update-world (state)
+  "imperitve method to update objects in state, returns new state"
+  ;;for s in state, do update state
+  state
+  )
+
+(setf *state* (init-world *state*))
 
 (defun init-monsters ()
   (loop for i  below 10 do 
@@ -98,14 +150,32 @@
   (loop for m in  monsters do
         (draw-monster m player)))
 
-(defun player-coords-to-screen (player x-offset y-offset)
+;;x-offset is distance from the window edge (in screen coords, not map coords)
+;;factor out init-tile, just do drawing
+
+
+;;call to monster-x below should be (world-x object)
+
+ (defun find-screen-coods (player x-offset y-offset object)
+   (values ((monster-x monster) (+ x-offset (player-x player)))
+        ((monster-y monster) (+ y-offset (player-y player)))))
+
+(init-player)
+(init-monster )
+
+*monsters*
+
+
+(find-screen-coods (*player* 5 5 ()))
+
+(defun player-coords-to-screen (player x-offset y-offset object)
   (let ((x (+ x-offset (player-x player)))
         (y (+ y-offset (player-y player))))
-    (draw-tile  (init-tile x y)
+    (draw-tile 
                 (+ x-offset (floor (/ *screen-width* 2)))
                 (+ y-offset (floor (/ *screen-height* 2))))))
 
-(defun draw-map (player)
+(defun draw-around-player (player)
   (let ((x-min (1+ (* -1 (floor (/ *screen-width* 2)))))
         (x-max (floor (/ *screen-width* 2)))
         (y-min (1+ (* -1 (floor (/ *screen-height* 2)))))
@@ -113,6 +183,14 @@
     (loop for i from x-min below x-max do
         (loop for j from y-min below y-max do
               ( player-coords-to-screen player i j)))))
+
+()
+
+(defun draw-tile (tile player x y)
+  ;; (init-tile x y)
+  ;;x = i in the loop, y = j
+  (player-coords-to-screen player x y)
+  )
 
 (defparameter *perlin-depth* 4)
 (defparameter *perlin-freq* .1)
@@ -183,8 +261,7 @@
 
 
 (defscreen play
-           :before ((init-player)
-                     (init-monsters))
+           :before ((setf *state* (init-world *state*)))
            :input ( ((nil) nil)
                     ((#\j) (move-down *player*))
                     ((#\k) (move-up *player*))
