@@ -77,9 +77,28 @@
                 health)
 (defstruct (monster (:include player)))
 
+(defclass tile () 
+  ((x :accessor :object-x)
+   (y :accessor :object-y)
+   (glyph :accessor :tile-glyph)
+   (color :accessor :tile-color)
+   ))
 
-;;;;;entity -> tile -> player -> monster
-;;;         \-> hud
+(defclass water-tile (tile)
+  (glyph :accessor :tile-glyph
+         :init-form #\~)
+   (color :accessor :tile-color
+          :initform +blue+
+          )
+  )
+
+(defclass object ()
+  ((x :accessor :object-x)
+   (y :accessor :object-y)))
+
+;;;;;entity -> player -> monster
+;;;
+;;;     also map, map-tile, hud
 ;;;init draw move
 ;;;
 ;;;but also have monsters and monster...  
