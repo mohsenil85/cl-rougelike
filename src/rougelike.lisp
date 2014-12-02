@@ -1,5 +1,53 @@
 (in-package :cl-user)
 
+;;;;
+;;;so, 2 pieces of state:  "game" where 
+;{
+;   game :
+;     [
+;       player:
+;       { 
+;        x : 44
+;        y: 33
+;       },
+;       monster:
+;       {
+;        x: 22
+;        y: 44
+;       }
+;     ]
+;}
+;
+;and "uis"  like (draw ui game) (handle-input ui game) 
+;
+;;;  both take game as a parameter, and mutate it?
+;;;  ;;  i guess it makes sense that after handling input, the game state would be different
+;;;  ;;;  so would we end up with code like (setf game (handleinput ui game))?  
+;;;  draw ui would be pure.  ui doesn't even have to be a parameter. it would just be 
+;;;  (draw-ui game) or maybe (render-ui state)
+;;;  i guess that's why they are generaic or should be.  draw ui will specialize in ui type (map, inventory, win lose etc)
+;;;  
+;;;  ;;state would be what's saved into a database
+;;;
+;;;  a list of uis, that's what keeps track of ui state.  
+;;;  
+;;;  the loop goes:
+;;  (defun run-game (ui game)
+;;;   (render ui)
+;;;   (gatherinput)
+;;;   (mutate game) ;; that is where we would do non pure shit to the game object/hash
+;;;   (run-game ((next-ui ui) (game)) ;; recur here with next game iteration
+;;;   
+;;;   
+;;;   
+;;;   ;;; so game could have a next-ui property?
+;;;   or a global *cuurrent-ui* var
+
+
+;;;;  luck instead of mana..  but it could be negative...  randomly good or bad  so you use 3 luck to open a door, but instead it spawns an imp...  then you can get some sort of meta-luck 
+;;;; to make it good more often
+
+;; maybe luck AND mana
 (ql:quickload "cl-charms")
 (ql:quickload "perlin")
 (ql:quickload "omens")
@@ -67,13 +115,13 @@
                :color (color-switch glyph))))
 
 
-;(defclass node-object ()
-;  ((x :accessor world-x :initarg :x)
-;   (y :accessor world-y :initarg :y)
-;   (glyph :accessor :node-glyph :initarg :glyph)
-;   (color :accessor :node-color :initform +white+ :initarg :color)))
+(defclass node-object ()
+  ((x :accessor world-x :initarg :x)
+   (y :accessor world-y :initarg :y)
+   (glyph :accessor :node-glyph :initarg :glyph)
+   (color :accessor :node-color :initform +white+ :initarg :color)))
 ;
-;(defclass player-new (node-object) ((health :initform 10 :accessor health)))
+(defclass player-new (node-object) ((health :initform 10 :accessor health)))
 
 (defparameter *state* (make-hash-table)) 
 
@@ -81,11 +129,11 @@
 ;  (:documentation "initzialize the node object"))
 
 
-(defun init-player (player)
-(setf (gethash player *state* ) ( 
-               :x 0 
-               :y 0 
-               :glyph #\@ :color +yellow+)))
+(defun add-player-to-state (player)
+  (setf (gethash player *state* ) player ))
+
+(setf (gethash *player* *state*) :foo)
+(gethash *player* *state* )
 
 
 (defparameter *player* (make-instance 'player-new
@@ -93,9 +141,11 @@
                                       :y 0 
                                       :glyph #\@ :color +yellow+   
                                       ))
-(init-player *player*)
-
+*player*
 *state*
+(add-player-to-state *player*)
+
+;*state*
 
 ;;could have a node object that had x, , glyph, color, other props, indexed by #'eql name
 
@@ -160,15 +210,16 @@
    (values ((monster-x monster) (+ x-offset (player-x player)))
         ((monster-y monster) (+ y-offset (player-y player)))))
 
-(init-player)
-(init-monster )
+;(init-player)
+;(init-monster )
 
-*monsters*
+;*monsters*
 
 
-(find-screen-coods (*player* 5 5 ()))
+;(find-screen-coods (*player* 5 5 ()))
 
-(defun player-coords-to-screen (player x-offset y-offset object)
+(defun player-coords-to-screen-coords (player x-offset y-offset object)
+  "change map (or absolute) coords to screen coords"
   (let ((x (+ x-offset (player-x player)))
         (y (+ y-offset (player-y player))))
     (draw-tile 
@@ -176,13 +227,14 @@
                 (+ y-offset (floor (/ *screen-height* 2))))))
 
 (defun draw-around-player (player)
+  "given a player's coords, draw a screen-sized section of map around him"
   (let ((x-min (1+ (* -1 (floor (/ *screen-width* 2)))))
         (x-max (floor (/ *screen-width* 2)))
         (y-min (1+ (* -1 (floor (/ *screen-height* 2)))))
         (y-max ( floor (/ *screen-height* 2))))
     (loop for i from x-min below x-max do
         (loop for j from y-min below y-max do
-              ( player-coords-to-screen player i j)))))
+              ( player-coords-to-screen-coords player i j)))))
 
 ()
 
